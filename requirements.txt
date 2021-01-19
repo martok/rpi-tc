@@ -1,0 +1,9 @@
+# create with virtualenv --system-site-packages
+# or set include-system-site-packages=true in venv/pyvenv.cfg
+
+typing_extensions
+
+picamerax
+numpy>=1.18
+opencv-python~=3.4
+cython

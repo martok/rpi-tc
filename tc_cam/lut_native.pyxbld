@@ -1,0 +1,16 @@
+def make_ext(modname, pyxfilename):
+    from distutils.extension import Extension
+    import numpy
+    import os
+    more_opts = []
+    if os.name == "nt":
+        more_opts += ['/O2', "/arch:AVX2", "/D__SSE4_2__", "/Qpar", "/Qpar-report:1", "/fp:fast", "/favor:INTEL64",
+                      "/FAs"]
+    else:
+        more_opts += ["-march=native", "-mtune=native", "-mcpu=native", "-O3", "-ffast-math"]
+
+    return Extension(name=modname,
+                     sources=[pyxfilename],
+                     include_dirs=[numpy.get_include()],
+                     extra_compile_args=['-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION'] + more_opts
+                     )

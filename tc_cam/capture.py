@@ -56,8 +56,7 @@ else:
                 "bayer_format": 4
             }
             self.camera = DummyCamera()
-            # self.buffer = TCDummyBayerArray("test\\RedR.raw.npy", h)
-            self.buffer = TCDummyBayerArray("test\\bayered.raw.npy", h)
+            self.buffer = TCDummyBayerArray("data/test/bal.raw.npy", h)
 
         def raw_captures(self) -> Iterator[FrameBuffer]:
             for _ in range(10000):

@@ -48,18 +48,6 @@ class CaptureApp:
             print(str(buffer.get_header()))
             self.window.key_loop()
 
-            # by = rawimage[4*200:4*300, 4*300:4*400]
-            # by = rawimage.copy() >> 4
-            # #cv2.normalize(by, by, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-            # deb = cv2.demosaicing(by, cv2.COLOR_BayerRG2BGR) * [2, 1, 2]
-            #
-            # self.window.display_image(cv2.cvtColor(by, cv2.COLOR_GRAY2BGR).astype(np.uint8), reduction=4)
-            # self.window.display_image(deb.astype(np.uint8), reduction=4)
-            #
-            # while True:
-            #     if self.window.wait_key(100):
-            #         break
-
             # process image
             raw_demo = buffer.demosaic()
             if self.downsample > 1:
@@ -73,7 +61,6 @@ class CaptureApp:
             if self.crop_region:
                 raw_demo = extract_region(raw_demo, self.crop_region)
 
-            # # output = gamma_convert(raw_demo, blacklevel, 2 ** 12 - 1, gamma, dtype=np.uint8, use_lut=True)
             if not lut:
                 lut = ExposureLut(blacklevel, 2 ** 12 - 1, np.uint8,
                                   gamma=self.gamma, gain_b=self.gain_b, gain_r=self.gain_r,
@@ -83,7 +70,6 @@ class CaptureApp:
 
             self.window.key_loop()
 
-            # output = lut.apply_ccm(white_balanced, lut.ccm)
             output = white_balanced
             self.window.key_loop()
 

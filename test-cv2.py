@@ -6,9 +6,9 @@ import cv2
 import numpy as np
 
 from tc_cam import Stopwatch
-from tc_cam.capture import CaptureCamera
 from tc_cam.process import histogram_calc, histogram_draw, calc_black_level, extract_region, ExposureLut
 from tc_cam.cvext import CVWindow, region_reparent, display_shadow_text
+from tc_cam.raw_source import AbstractRawSource
 
 
 class CaptureApp:
@@ -26,15 +26,17 @@ class CaptureApp:
         self.crop_region = None
         self.downsample = 16
 
-        self.capture: Optional[CaptureCamera] = None
+        self.capture: Optional[AbstractRawSource] = None
         self.window = CVWindow("Telecine")
 
     def start(self):
-        self.capture = CaptureCamera()
+        cls = AbstractRawSource.get_implementation()
+        self.capture = cls()
 
     def camera_set(self):
         # setup for next capture
-        self.capture.camera.shutter_speed = int(self.shutter * 1000)
+        if hasattr(self.capture, "camera"):
+            self.capture.camera.shutter_speed = int(self.shutter * 1000)
 
     def main_loop(self):
         lut = None

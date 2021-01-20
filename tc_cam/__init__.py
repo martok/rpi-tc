@@ -1,17 +1,4 @@
 import time
-from typing import Any, Dict
-
-import numpy as np
-from typing_extensions import Protocol
-
-
-class FrameBuffer(Protocol):
-    _header: Any
-    array: np.ndarray
-
-    def get_header(self) -> Dict: ...
-
-    def demosaic(self) -> np.ndarray: ...
 
 
 class Stopwatch:

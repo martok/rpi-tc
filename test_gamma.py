@@ -3,7 +3,8 @@ import numpy as np
 
 from tc_cam import Stopwatch
 from tc_cam.cvext import CVWindow
-from tc_cam.process import gamma_convert, histogram_calc, histogram_draw, ExposureLut
+from tc_cam.process import gamma_convert, ExposureLut
+from tc_cam.analyze import histogram_calc, histogram_draw
 
 img = cv2.imread("test/16bit.tiff", cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
 

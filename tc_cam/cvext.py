@@ -4,6 +4,40 @@ import cv2
 import numpy as np
 
 
+def rect_empty(rect):
+    return rect[0] == rect[2] and rect[1] == rect[3]
+
+
+def rect_to_region(left, top, width, height, w=1, h=1):
+    return [top / h, left / w, (top + height) / h, (left + width) / w]
+
+
+def region_reparent(region, reference_region):
+    # if region is defined relative to reference_frame, where is it globally?
+    if reference_region is None:
+        return region
+    outer_h = reference_region[2] - reference_region[0]
+    outer_w = reference_region[3] - reference_region[1]
+
+    r2 = [
+        reference_region[0] + outer_h * region[0],
+        reference_region[1] + outer_w * region[1],
+        reference_region[0] + outer_h * region[2],
+        reference_region[1] + outer_w * region[3],
+    ]
+    return r2
+
+
+def extract_region(image: np.ndarray, region) -> np.ndarray:
+    h, w, d = image.shape
+    t = int(h * region[0])
+    l = int(w * region[1])
+    b = int(h * region[2])
+    r = int(w * region[3])
+    roi = image[t:b, l:r, :]
+    return roi
+
+
 def display_shadow_text(img, x, y, text, font=cv2.FONT_HERSHEY_PLAIN, font_scale=1.25, thickness=1, line_spacing=1.5):
     """
     Displays with a grey shadow at point x,y
@@ -26,30 +60,6 @@ def display_shadow_text(img, x, y, text, font=cv2.FONT_HERSHEY_PLAIN, font_scale
                     lineType=cv2.LINE_AA)
         org += [0, h * line_spacing]
     return img
-
-
-def rect_empty(rect):
-    return rect[0] == rect[2] and rect[1] == rect[3]
-
-
-def rect_to_region(left, top, width, height, w=1, h=1):
-    return [top / h, left / w, (top + height) / h, (left + width) / w]
-
-
-def region_reparent(region, reference_region):
-    # if region is defined relative to reference_frame, where is it globally?
-    if reference_region is None:
-        return region
-    outer_h = reference_region[2] - reference_region[0]
-    outer_w = reference_region[3] - reference_region[1]
-
-    r2 = [
-        reference_region[0] + outer_h * region[0],
-        reference_region[1] + outer_w * region[1],
-        reference_region[0] + outer_h * region[2],
-        reference_region[1] + outer_w * region[3],
-        ]
-    return r2
 
 
 class CVWindow:

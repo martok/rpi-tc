@@ -1,24 +1,90 @@
-import cv2
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 
-from tc_cam.lut import LUT3D
+try:
+    import pyximport
 
+    pyximport.install(setup_args={"script_args": ["--verbose"]},
+                      build_in_temp=False)
 
-def calc_black_level(image: np.ndarray, left=128, top=128, right=128, bottom=128):
-    a = np.concatenate((image[:left, :, :].flat, image[-right:, :, :].flat,
-                        image[:, :top, :].flat, image[:, -bottom:, :].flat))
-    return np.mean(a) + np.std(a) * 2
+    from tc_cam.lut_native import lut_apply
+except ImportError:
+    print("Error compiling native extension!")
+    raise
 
+ColorTransferFn = Callable[[np.ndarray], np.ndarray]
 
-def extract_region(image: np.ndarray, region) -> np.ndarray:
-    h, w, d = image.shape
-    t = int(h * region[0])
-    l = int(w * region[1])
-    b = int(h * region[2])
-    r = int(w * region[3])
-    roi = image[t:b, l:r, :]
-    return roi
+class LUT3D:
+
+    def __init__(self) -> None:
+        self.grid: int = 0
+        self.binsize: float = 0
+        self.cube: Optional[np.ndarray] = None
+
+        self.setup(2, (0, 2 ** 8 - 1), np.uint8, lambda bgr: bgr)
+
+    def setup(self, grid: int, irange: Tuple[int, int], otype, transfer: ColorTransferFn):
+        blackpoint, whitepoint = irange
+        idynrange = whitepoint - blackpoint
+        odynrange = np.iinfo(otype).max
+
+        def vtrans(arr):
+            return np.array(
+                [transfer(row) for row in arr])  # vtrans = np.vectorize(transfer, signature="(m)->(m)") is slower
+
+        # a grid=5 over max = 10 has values with binsize 10/4 = 2.5:
+        # 0. ,  2.5,  5. ,  7.5, 10.
+        self.grid = grid
+        self.binsize = whitepoint / (grid - 1)
+
+        # sample transfer function
+        # create indices for N x N x N x 3 Cube, but in sequential shape
+        indexes = np.array(list(np.ndindex((grid, grid, grid))))
+
+        # locate input for each voxel
+        c_itype = indexes * self.binsize
+        # rescale to actual dynamic range for mapping function
+        c_dyn = np.clip((c_itype - blackpoint) / idynrange, 0, None)
+        # apply map
+        c_out = transfer(c_dyn)
+        # cast [0..1] range to int output and assign cube shape
+        lut = np.clip(c_out * odynrange, 0, odynrange).round().astype(otype).reshape((grid, grid, grid, 3))
+
+        # pad right for trilinear
+        lut = np.pad(lut, [(0, 1), (0, 1), (0, 1), (0, 0)], mode="edge")
+        self.cube = lut
+
+    @staticmethod
+    def xfer_identity(bgr: np.ndarray) -> np.ndarray:
+        bgr = np.atleast_2d(bgr)
+        return bgr
+
+    @staticmethod
+    def xfer_whitebalance(bgr: np.ndarray, gain_b: float, gain_r: float) -> np.ndarray:
+        bgr = np.atleast_2d(bgr)
+        return bgr * [gain_b, 1.0, gain_r]
+
+    @staticmethod
+    def xfer_gamma(bgr: np.ndarray, gamma: float) -> np.ndarray:
+        bgr = np.atleast_2d(bgr)
+        return bgr ** gamma
+
+    @staticmethod
+    def xfer_contrast(bgr: np.ndarray, contrast: float, brightess: float) -> np.ndarray:
+        bgr = np.atleast_2d(bgr)
+        return (bgr - 0.5) * contrast + brightess
+
+    @staticmethod
+    def xfer_ccm(bgr: np.ndarray, ccm: np.ndarray) -> np.ndarray:
+        bgr = np.atleast_2d(bgr)
+        return np.matmul(bgr, ccm)
+
+    def apply(self, img: np.ndarray):
+        flat = img.flatten()
+        out = np.empty(flat.shape, dtype=self.cube.dtype)
+        lut_apply(flat, self.cube, self.binsize, out)
+        return out.reshape(img.shape)
 
 
 class ExposureLut(LUT3D):
@@ -43,28 +109,3 @@ class ExposureLut(LUT3D):
 
         self.setup(32, (blacklevel, whitelevel), dst_dtype, make_lut)
 
-
-def histogram_calc(image: np.ndarray, bins=256, value_range=None, mask=None):
-    if value_range is None:
-        value_range = [np.iinfo(image.dtype).min, np.iinfo(image.dtype).max + 1]
-    bh = cv2.calcHist([image], [0], mask, [bins], value_range, accumulate=False).flatten()
-    gh = cv2.calcHist([image], [1], mask, [bins], value_range, accumulate=False).flatten()
-    rh = cv2.calcHist([image], [2], mask, [bins], value_range, accumulate=False).flatten()
-    return np.array((bh, gh, rh))
-
-
-def histogram_draw(image: np.ndarray, histogram):
-    cm = np.iinfo(image.dtype).max
-    COLORS = ((cm, 0, 0), (0, cm, 0), (0, 0, cm))
-    hist_h, hist_w, _ = image.shape
-    hist_size = histogram.shape[1]
-    hist_h -= 5
-    bin_w = int(round(hist_w / hist_size))
-    cv2.normalize(histogram, histogram, alpha=0, beta=hist_h, norm_type=cv2.NORM_MINMAX)
-    for i in range(1, hist_size):
-        for c in range(3):
-            ch = histogram[c, :]
-            cv2.line(image, (bin_w * (i - 1), hist_h - int(round(ch[i - 1]))),
-                     (bin_w * (i), hist_h - int(round(ch[i]))),
-                     COLORS[c], thickness=2)
-    cv2.rectangle(image, (0, 0), (bin_w * hist_size, hist_h), color=(cm, cm, cm), thickness=1)

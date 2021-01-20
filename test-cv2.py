@@ -6,8 +6,9 @@ import cv2
 import numpy as np
 
 from tc_cam import Stopwatch
-from tc_cam.process import histogram_calc, histogram_draw, calc_black_level, extract_region, ExposureLut
-from tc_cam.cvext import CVWindow, region_reparent, display_shadow_text
+from tc_cam.process import ExposureLut
+from tc_cam.analyze import calc_black_level, histogram_calc, histogram_draw
+from tc_cam.cvext import CVWindow, region_reparent, extract_region, display_shadow_text
 from tc_cam.raw_source import AbstractRawSource
 
 

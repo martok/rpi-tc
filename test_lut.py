@@ -3,7 +3,7 @@ import numpy as np
 
 from tc_cam import Stopwatch
 from tc_cam.cvext import CVWindow
-from tc_cam.lut import LUT3D
+from tc_cam.process import LUT3D
 
 img = cv2.imread("test/16bit.tiff", cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
 win = CVWindow("image")

@@ -18,13 +18,13 @@ class CaptureApp:
         self.draw_overlay = True
         self.draw_hist = False
         self.gamma = 2.2
-        self.gain_r = 2.425  # 2.191
-        self.gain_b = 2.325  # 2.753
+        self.gain_r = 2.1 # 2.425  # 2.191
+        self.gain_b = 2.1  # 2.325  # 2.753
         self.ccm_matrix = True
         self.temperature = 4500
         self.saturation = 0.85
-        self.brightness = 0.5
-        self.contrast = 1.0
+        self.brightness = 0.450
+        self.contrast = 1.750
         self.shutter = 50
         self.crop_region = None
         self.downsample = 16
@@ -66,6 +66,7 @@ class CaptureApp:
                     lut = None
                 elif cey in "bB":
                     self.gain_b += incdec(0.05)
+                    lut = None
                 elif cey == "m":
                     self.ccm_matrix = not self.ccm_matrix
                     lut = None
@@ -154,7 +155,6 @@ class CaptureApp:
             self.window.key_loop()
 
             output = white_balanced
-            self.window.key_loop()
 
             def do_overlay(over_img):
                 if self.draw_hist:
@@ -174,7 +174,6 @@ class CaptureApp:
             scale = max(output.shape[0] / 800, output.shape[1] / 1600)
             self.window.display_image(output, reduction=scale, overlay_fn=do_overlay if self.draw_overlay else None)
             print("displayed")
-            self.window.key_loop()
 
             self.window.key_loop()
             if not process_keys():

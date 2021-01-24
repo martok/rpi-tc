@@ -111,7 +111,7 @@ class CVWindow:
             return None
         return key
 
-    def key_loop(self, time=10):
+    def key_loop(self, time=5):
         key = self.wait_key(time)
         if key is not None:
             self.key_buffer.append(key)

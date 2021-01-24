@@ -69,7 +69,7 @@ class LUT3D:
     @staticmethod
     def xfer_gamma(bgr: np.ndarray, gamma: float) -> np.ndarray:
         bgr = np.atleast_2d(bgr)
-        return bgr ** gamma
+        return np.where(bgr < 0, 0, bgr) ** gamma
 
     @staticmethod
     def xfer_contrast(bgr: np.ndarray, contrast: float, brightess: float) -> np.ndarray:

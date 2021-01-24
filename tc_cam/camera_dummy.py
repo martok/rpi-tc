@@ -1,9 +1,9 @@
+from pathlib import Path
 from typing import Dict, Iterator
 
-import cv2
 import numpy as np
 
-from tc_cam.raw_source import FrameBuffer, AbstractRawSource
+from tc_cam.raw_source import FrameBuffer, AbstractRawSource, CalibrationData
 from tc_cam.bayer import BayerConvert
 
 
@@ -40,7 +40,14 @@ class DummyRawSource(AbstractRawSource):
         }
         self.camera = DummyCamera()
         self.buffer = TCDummyBayerArray("data/test/bal.raw.npy", h)
+        self.config = CalibrationData(Path(".") / "data" / "imx477.json")
 
     def raw_captures(self) -> Iterator[FrameBuffer]:
         for _ in range(10000):
             yield self.buffer
+
+    def get_ccm(self, temperature: float) -> np.ndarray:
+        if self.config.ccm_interpolation is not None:
+            v = self.config.ccm_interpolation(temperature)
+            return v.reshape((3,3))
+        return None

@@ -5,5 +5,6 @@ typing_extensions
 
 picamerax
 numpy>=1.18
+scipy
 opencv-python~=3.4
 cython

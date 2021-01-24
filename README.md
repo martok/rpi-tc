@@ -32,6 +32,8 @@ Key   | Meaning
 `b`,`B` | Decrease/Increase blue gain
 `r`,`R` | Decrease/Increase red gain
 `m`     | Toggle CCM (Camera RGB -> sRGB)
+`i`,`I` | Decrease/Increase illuminant color temperature
+`s`,`S` | Decrease/Increase saturation
 `l`,`L` | Decrease/Increase brightness
 `k`,`K` | Decrease/Increase contrast
 `t`,`T` | Decrease/Increase shutter time

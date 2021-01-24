@@ -16,6 +16,7 @@ except ImportError:
 ColorTransferFn = Callable[[np.ndarray], np.ndarray]
 
 class LUT3D:
+    RGB2YCbCr = np.array([[0.299, 0.587, 0.114], [-0.1687, -0.3313, 0.500], [0.500, -0.4187, -0.0813]])
 
     def __init__(self) -> None:
         self.grid: int = 0
@@ -78,7 +79,7 @@ class LUT3D:
     @staticmethod
     def xfer_ccm(bgr: np.ndarray, ccm: np.ndarray) -> np.ndarray:
         bgr = np.atleast_2d(bgr)
-        return np.matmul(bgr, ccm)
+        return np.matmul(bgr, ccm.T)
 
     def apply(self, img: np.ndarray):
         flat = img.flatten()
@@ -91,18 +92,26 @@ class ExposureLut(LUT3D):
 
     def __init__(self, blacklevel: int, whitelevel: int, dst_dtype, *,
                  gamma: float = 1.0, gain_b: float = 1.0, gain_r: float = 1.0,
-                 use_matrix: bool = False,
+                 ccm: Optional[np.ndarray] = None, saturation: float = 1.0,
                  brightess: float = 0.5, contrast: float = 1.0):
         super().__init__()
-        ccm = np.array([7930, -3604, -224, -698, 6082, -1282, 612, -3186, 6676, 0, 0, 0])[:-3].reshape(
-            (3, 3)) / 4096.0
 
         def make_lut(bgr: np.ndarray) -> np.ndarray:
             # follow the order of https://www.strollswithmydog.com/open-raspberry-pi-high-quality-camera-raw/
             # WB, project to sRGB, apply gamma, apply contrast
             bgr = LUT3D.xfer_whitebalance(bgr, gain_b, gain_r)
-            if use_matrix:
-                bgr = LUT3D.xfer_ccm(bgr, ccm.T)
+            if ccm is not None or saturation != 1.0:
+                Coriginal = np.eye(3) if ccm is None else ccm
+                if saturation == 1.0:
+                    sat = np.eye(3)
+                else:
+                    s = saturation
+                    t = 1.0 - saturation
+                    S = np.array([1, 0, 0, 0, s, 0, 0, 0, s]).reshape((3,3))
+                    T = np.pad(np.full((2, 2), t / 3) * (np.eye(2)[::-1] + 1), ((0, 1), (1, 0)), mode="constant", constant_values=0.0)
+                    sat = np.linalg.inv(LUT3D.RGB2YCbCr) @ (S + T) @ LUT3D.RGB2YCbCr
+                Cnew = sat @ Coriginal
+                bgr = LUT3D.xfer_ccm(bgr, Cnew)
             bgr = LUT3D.xfer_gamma(bgr, 1 / gamma)
             bgr = LUT3D.xfer_contrast(bgr, contrast, brightess)
             return bgr

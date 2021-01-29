@@ -106,9 +106,16 @@ class ExposureLut(LUT3D):
                     sat = np.eye(3)
                 else:
                     s = saturation
-                    t = 1.0 - saturation
-                    S = np.array([1, 0, 0, 0, s, 0, 0, 0, s]).reshape((3,3))
-                    T = np.pad(np.full((2, 2), t / 3) * (np.eye(2)[::-1] + 1), ((0, 1), (1, 0)), mode="constant", constant_values=0.0)
+                    t = (1.0 - saturation) / 3
+                    #                      ( / 1  0  0 \   / 0   t  2t \ )
+                    #  C_new = rgb2YCbCr . ( | 0  s  0 | + | 0  2t   t | ) . YCbCr2rgb . C_original
+                    #                      ( \ 0  0  s /   \ 0   0   0 / )
+                    S = np.array([1, 0, 0,
+                                  0, s, 0,
+                                  0, 0, s]).reshape((3,3))
+                    T = np.array([0,   t, 2*t,
+                                  0, 2*t,   t,
+                                  0,   0,   0]).reshape((3,3))
                     sat = np.linalg.inv(LUT3D.RGB2YCbCr) @ (S + T) @ LUT3D.RGB2YCbCr
                 Cnew = sat @ Coriginal
                 bgr = LUT3D.xfer_ccm(bgr, Cnew)

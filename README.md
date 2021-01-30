@@ -16,6 +16,21 @@ the large dynamic range of the IMX477 and its RAW output.
 * [libcamera source tree](https://git.linuxtv.org/libcamera.git/)
 * [libcamera calibration data](https://git.libcamera.org/libcamera/libcamera.git/tree/src/ipa/raspberrypi/data)
 
+
+## Setup
+
+1. Checkout this repository
+1. Install packages (also sets up virtualenv):
+    ```shell
+    /bin/sh requirements.sh
+    ```
+1. For future updates to the requirements:
+    ```shell
+    $ . venv/bin/activate
+    (venv)$ pip install -U -r requirements.txt
+    ```
+
+
 ## Tools
 
 ### test-cv2.py
